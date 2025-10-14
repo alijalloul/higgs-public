@@ -5,6 +5,10 @@ It is designed around minimal dependencies, using only **Vulkan**, **GLFW**, and
 
 ---
 
+![Higgs demo](assets/higgs.gif)
+
+---
+
 ## Download
 
 To try out Higgs, download and run the latest build from the **Releases** section of this repository:
@@ -117,6 +121,8 @@ Higgs currently includes:
 - Custom OBJ model loader  
 - PNG, TGA, and BGA image loading  
 - Descriptor and uniform buffer management  
+- Resource Mangement
+- Basic Scene class
 
 While fully functional at a base level, the engine is still under development and serves primarily as a platform for low-level graphics experimentation.
 
@@ -124,13 +130,17 @@ While fully functional at a base level, the engine is still under development an
 
 ## Planned Work
 
-- More comprehensive resource management system
+- Glyphs
+- UI library
 - glTF model format support
 - Material system with PBR 
-- Scene graph or ECS  
 - Shadow mapping  
+- Real time lighting (Ray Tracing)
+- Entity Transform Editor
 - Comprehensive Scene editor  
-- Physics System  
+- Physics System 
+- Game Executable State
+- Game Bundeling
 
 ---
 
