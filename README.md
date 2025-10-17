@@ -33,7 +33,6 @@ The engine supports basic FPS-style controls:
 |--------|---------|
 | **W, ↑ / A, ← / S, ↓ / D, →** | Move forward, left, backward, right |
 | **Mouse (Left Click + Move)** | Rotate camera |
-| **Wheel** | World z forawrd and backward |
 
 ---
 
@@ -70,25 +69,11 @@ All camera orientation and renderables positioning are handled through this math
 
 ---
 
-## Rendering System
-
-The rendering backend is fully implemented with Vulkan, abstracting the essentials while maintaining explicit control over rendering operations.
-
-Implemented features:
-- Depth testing (depth buffers)
-- MSAA (multisample anti-aliasing)
-- Vertex buffers (for model properties encapsulation)
-- Descriptor manager (for uniform and texture bindings)
-- UBOs for vertex, lighting, and texture data
-- A lighting system (currently only directional light)
-
----
-
 ## Resource and Asset Loading
 
 Higgs uses custom, lightweight loaders for assets and images:
 
-- **Model Loader** – Supports `.obj` models
+- **Model Loader** – Supports `.obj` and `.glb (bin)` models
 - **Image Loader** – Supports `.png`, `.tga`, and `.bga`
 
 ---
@@ -100,7 +85,7 @@ The camera system integrates directly with the input manager to provide a first-
 - **Camera**
   - Perspective projection
   - Maintains `view` and `projection` matrices
-  - Tracks directional vectors (`forward`, `right`, `up`)
+  - Tracks directional vectors (`forward`, `backward`, `left`, `right`)
   - Updates dynamically with quaternion rotation
 
 - **Input Manager**
@@ -118,11 +103,11 @@ Higgs currently includes:
 - Depth testing and MSAA  
 - Directional lighting system  
 - Input and camera system  
-- Custom OBJ model loader  
+- Custom OBJ and GLB model loader  
 - PNG, TGA, and BGA image loading  
-- Descriptor and uniform buffer management  
-- Resource Mangement
-- Basic Scene class
+- Resource System (Materials, Textures, Meshes, Nodes)  
+- Scene hierarchy and manager
+- Input Manager 
 
 While fully functional at a base level, the engine is still under development and serves primarily as a platform for low-level graphics experimentation.
 
@@ -132,8 +117,7 @@ While fully functional at a base level, the engine is still under development an
 
 - Glyphs
 - UI library
-- glTF model format support
-- Material system with PBR 
+- Material system with PBR (1/4th done)
 - Shadow mapping  
 - Real time lighting (Ray Tracing)
 - Entity Transform Editor
