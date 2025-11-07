@@ -108,6 +108,8 @@ Higgs currently includes:
 - Resource System (Materials, Textures, Meshes, Nodes)  
 - Scene hierarchy and manager
 - Input Manager 
+- Basic UI system
+- Abstracted Engine, Game, and UI classes
 
 While fully functional at a base level, the engine is still under development and serves primarily as a platform for low-level graphics experimentation.
 
@@ -117,6 +119,7 @@ While fully functional at a base level, the engine is still under development an
 
 - Glyphs
 - UI library
+- HTML and CSS interpreter
 - Material system with PBR (1/4th done)
 - Shadow mapping  
 - Real time lighting (Ray Tracing)
