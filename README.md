@@ -1,7 +1,8 @@
 # Higgs Engine
 
-Higgs is a lightweight 3D engine written in C++ using Vulkan.  
-It is designed around minimal dependencies, using only **Vulkan**, **GLFW**, and the **C++ standard library**.
+Higgs is a lightweight C++ engine built using Vulkan.  
+Currently, development is focused on the custom UI framework, which aims to replicate a high-performance HTML/CSS-like runtime inside a native application.  
+3D/Game-related word is currently on hold.
 
 ---
 
@@ -11,127 +12,138 @@ It is designed around minimal dependencies, using only **Vulkan**, **GLFW**, and
 
 ## Download
 
-To try out Higgs, download and run the latest build from the **Releases** section of this repository:
+1. Open the **Releases** section  
+2. Download the latest `.rar`  
+3. Extract anywhere  
+4. Run **higgs.exe**  
+5. If Windows warns you:
+   - Click **More info**
+   - Click **Run anyway**
 
-1. Click on **Releases** in the GitHub sidebar.  
-2. Download the latest `.rar` archive.  
-3. Unzip the archive to any folder.  
-4. Open the extracted folder and run **higgs.exe**.  
-5. Windows may block the executable because it is from an unknown source.  
-   - Click **More info**  
-   - Then click **Run anyway**
-
-**Note:** The current implementation only supports **Windows**, primarily because the windowing system is built on GLFW with Windows-specific handling.
+**Platform:** Windows-only for now due to GLFW dependencies and platform-specific integrations.
 
 ---
 
-## Input Mapping
+# UI Framework (Current Focus)
 
-The engine supports basic FPS-style controls:
+The majority of active development is directed at the UI framework, which acts similarly to a small HTML/CSS layout and rendering engine.
 
-| Input | Action |
-|--------|---------|
-| **W, ↑ / A, ← / S, ↓ / D, →** | Move forward, left, backward, right |
-| **Mouse (Left Click + Move)** | Rotate camera |
+## ✔ Implemented
 
----
+### **Tree-Based UI Architecture**
+- DOM-like tree of nodes  
+- Parent → child hierarchy  
+- Cascading/inherited style properties  
 
-## Overview
+### **CSS-Inspired Style System**
+- Central style manager  
+- ~8% of CSS properties implemented (foundational subset)  
+- Partial inheritance rules  
+- Pseudo-style support (hover, focus, active)
+- Current style coverage includes:  
+  - Basic display properties  
+  - Basic positional properties (position relative, absolute. Margin, padding, etc)  
+  - Basic borders
+  - Overflow system
+- No text/glyph rendering yet (planned)
 
-Higgs provides a foundational framework for real-time 3D graphics with a focus on clarity and low-level control.  
-It implements a complete Vulkan rendering backend, a custom math, image and model loading libraries.
+### **Layout System (3-Pass Pipeline)**
+Layout currently operates in **three passes**:
 
----
+1. **Measure (Fixed)**: compute static sizes  
+2. **Measure (Dynamic)**: compute flexible sizes, flexbox propagation  
+3. **Position**: assign final coordinates and bounding boxes
 
-## Design Philosophy
+**Flexbox**  
+- Partial implementation:  
+  - direction  
+  - alignment  
+  - wrapping  
+  - flexible children sizing  
+- More advanced rules planned
 
-Higgs follows an object-oriented structure built around explicit, minimal dependencies and clear data flow.  
-Each system is self-contained and communicates through well-defined abstractions.  
+### **Overflow + Clipping**
+- GPU stencil-test pipeline for perfect clipping  
+- Correct overflow masking behavior  
+- Currently supports core overflow rules
 
-A central inheritance chain illustrates this approach:
-
-`Transform → Renderable → Light → DirectionalLight`
-
-This allows extensions and modifications to rendering entities without rewriting core systems, keeping the codebase transparent and adaptable.
-
----
-
-## Math and Transform System
-
-Higgs includes a custom math library for linear algebra and spatial transformations, built from the ground up.
-
-Features:
-- Generic **vectors (`Vec`)**, **matrices (`Mat`)** and **Quaternions (`Quat`)**
-- Comprehensive **transform utilities** (position, rotation, scale)
-- Quaternion-based rotation logic for both entities and the camera
-
-All camera orientation and renderables positioning are handled through this math layer.
-
----
-
-## Resource and Asset Loading
-
-Higgs uses custom, lightweight loaders for assets and images:
-
-- **Model Loader** – Supports `.obj` and `.glb (bin)` models
-- **Image Loader** – Supports `.png`, `.tga`, and `.bga`
-
----
-
-## Camera and Input System
-
-The camera system integrates directly with the input manager to provide a first-person navigation setup.
-
-- **Camera**
-  - Perspective projection
-  - Maintains `view` and `projection` matrices
-  - Tracks directional vectors (`forward`, `backward`, `left`, `right`)
-  - Updates dynamically with quaternion rotation
-
-- **Input Manager**
-  - Handles keyboard and mouse input
-  - FPS-style movement
-  - Mouse drag rotates the camera in real time
+### **Scroll System (Early)**
+- Wheel input handling  
+- Scroll bounds and clamping  
+- Vertical scroll only (`overflow-y: scroll`)  
+- **No interpolation / momentum yet**  
+- **No horizontal scrolling yet**  
+- Integration with overflow X not started
 
 ---
 
-## Current State
+# Upcoming UI Work
 
-Higgs currently includes:
-- Custom math and transform library  
-- Vulkan-based rendering pipeline  
-- Depth testing and MSAA  
-- Directional lighting system  
-- Input and camera system  
-- Custom OBJ and GLB model loader  
-- PNG, TGA, and BGA image loading  
-- Resource System (Materials, Textures, Meshes, Nodes)  
-- Scene hierarchy and manager
-- Input Manager 
-- Basic UI system
-- Abstracted Engine, Game, and UI classes
+### **Borders**
+- Per-side border widths with interpolation
+- Individual colors per side  
+- GPU-computating for Bezier curves
 
-While fully functional at a base level, the engine is still under development and serves primarily as a platform for low-level graphics experimentation.
+### **Scrolling**
+- Horizontal scroll  
+- Smooth interpolation/momentum  
+- Correct propagation  
+- Linked scrolling and nested scrollboxes
+
+### **Virtualized DOM-Like Optimization**
+- Render-only visible children  
+- Cull large UI trees  
+- Virtualized list/scroll performance
+
+### **HTML & CSS Parsing**
+- Custom tokenizer and parser  
+- Map parsed structure into the engine’s UI nodes  
+- CSS cascading and specificity rules (subset)
+
+### **JSX-Like Declarative Syntax**
+- Compile-time JSX-like components  
+- Direct mapping to UI nodes  
+- Designed to speed up UI building
+
+### **Text Rendering**
+- Glyph atlas  
+- Font loading  
+- Unicode shaping  
+- Text layout + inline formatting  
+- Text nodes and inline box model
 
 ---
 
-## Planned Work
+# 3D Engine (Paused)
 
-- Glyphs
-- UI library
-- HTML and CSS interpreter
-- Material system with PBR (1/4th done)
+The underlying 3D renderer remains functional but is **not** the current development target.
+
+Included:
+- Vulkan rendering pipeline  
+- Depth testing & MSAA  
+- Directional lighting  
+- Scene graph  
+- Custom math library (Vec/Mat/Quat)  
+- Custom OBJ + GLB loader  
+- PNG/TGA/BGA image loading  
+- Camera + input system  
+- Resource and material managers
+
+---
+
+# Future Engine Work (Long-Term)
+
+- Full PBR materials (partially implemented)  
 - Shadow mapping  
-- Real time lighting (Ray Tracing)
-- Entity Transform Editor
-- Comprehensive Scene editor  
-- Physics System 
-- Game Executable State
-- Game Bundeling
+- Ray-tracing experiments  
+- Scene & transform editor  
+- Physics system  
+- Engine→"game executable" optimized build pipeline  
+- UI + 3D integrated editor interface  
 
 ---
 
-## Note
+# Project Status
 
-This project is **private** and intended for personal use and learning.  
-It was not created with professional presentation or production deployment in mind.
+This project's source is **private**, experimental, and actively evolving.  
+It serves primarily as an R&D platform for custom UI engines, rendering pipelines, and engine architecture exploration.
