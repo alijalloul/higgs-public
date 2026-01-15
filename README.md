@@ -2,7 +2,7 @@
 
 Higgs is a lightweight C++ engine built using Vulkan.  
 Currently, development is focused on the custom UI framework, which aims to replicate a high-performance HTML/CSS-like runtime inside a native application.  
-3D/Game-related word is currently on hold.
+3D/Game-related work is currently on hold.
 
 ---
 
@@ -13,14 +13,14 @@ Currently, development is focused on the custom UI framework, which aims to repl
 ## Download
 
 1. Open the **Releases** section  
-2. Download the latest `.rar`  
+2. Download the latest `.rar`, `.tar`  
 3. Extract anywhere  
-4. Run **higgs.exe**  
+4. Run **higgs/.exe**  
 5. If Windows warns you:
    - Click **More info**
    - Click **Run anyway**
 
-**Platform:** Windows-only for now due to GLFW dependencies and platform-specific integrations.
+**Platform:** Windows and Linux only for now.
 
 ---
 
@@ -28,7 +28,7 @@ Currently, development is focused on the custom UI framework, which aims to repl
 
 The majority of active development is directed at the UI framework, which acts similarly to a small HTML/CSS layout and rendering engine.
 
-## ✔ Implemented
+## Implemented
 
 ### **Tree-Based UI Architecture**
 - DOM-like tree of nodes  
