@@ -67,7 +67,7 @@ Layout currently operates in **three passes**:
 - **Span and placement**: multi-column/multi-row spanning and manual placement
 - **Overlapping**: items can overlap tracks if explicitly positioned
 
-**Borders**
+### **Borders**
 
 - Smooth border creation with cubic bezier curves
 - Dynamic border widths with interpolation
