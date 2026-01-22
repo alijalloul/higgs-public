@@ -7,6 +7,8 @@ Currently, development is focused on the custom UI framework, which aims to achi
 
 ![Higgs demo](assets/higgs.gif)
 
+NOTE – this video heavily demonstrates all aspects of the Grid display. Auto flows, fractional, fit, and defined tracks. Cell based percentage sizing, multi grid item spanning, manual positioning, grid layout stacking (justify-content space-between, align-content end, justify-items end, justify-self center), nested grids, overflow handling, and Suzanne spinning around.
+
 ---
 
 ## Download
