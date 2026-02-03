@@ -1,7 +1,7 @@
 # Higgs Engine
 
 Higgs is a lightweight C++ graphics/game engine built using Vulkan.  
-Currently, development is focused on the custom UI framework, which aims to achieve react ergonomic with native performance.
+Currently, development is focused on the custom UI framework, which aims to achieve React ergonomics with native performance.
 
 ---
 
