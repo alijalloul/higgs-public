@@ -1,162 +1,158 @@
 # Higgs Engine
 
-Higgs is a lightweight C++ graphics/game engine built using Vulkan.  
-Currently, development is focused on the custom UI framework, which aims to achieve React ergonomics with native performance.
+Higgs is a lightweight C++ graphics, UI, and game engine built solely with Vulkan, GLFW, nlohmann/json, and the STL.  
+Current development is focused on the custom UI framework, which aims to provide React-like ergonomics with native performance.
 
 ---
 
 ![Higgs demo](assets/higgs.gif)
 
-NOTE – this video heavily demonstrates all aspects of the Grid display. Auto flows, fractional, fit, and defined tracks. Cell based percentage sizing, multi grid item spanning, manual positioning, grid layout stacking (justify-content space-between, align-content end, justify-items end, justify-self center), nested grids, overflow handling, and Suzanne spinning around.
+NOTE - this video demonstrates the Grid display in depth: auto flows, fractional, fit, and defined tracks, cell-based percentage sizing, multi-grid item spanning, manual positioning, grid layout stacking (`justify-content: space-between`, `align-content: end`, `justify-items: end`, `justify-self: center`), nested grids, overflow handling, `Hello World!` text aligned middle, and Suzanne spinning.
+
+On startup, an SDF glyph atlas texture `test.bmp` (for testing) is generated in `assets/textures/`, containing pre-rasterized SDFs for `[a-zA-Z]` and `!`. These are manually pre-queued (except for `!`) and instance-backed at runtime. The text rendering system automatically queues and flushes only what is required.
+
+The framebuffer update propagation and callback system is not fully implemented yet. Image extents update correctly and the application should remain stable, but the UI may be incorrectly proportioned with some aspect ratio inconsistencies.
 
 ---
 
 ## Download
 
-1. Open the **Releases** section
-2. Download the latest `.rar`, `.tar`
-3. Extract anywhere
-4. Run **higgs/.exe**
-5. If Windows warns you:
-   - Click **More info**
-   - Click **Run anyway**
+1. Open the Releases section  
+2. Download the latest `.rar`  
+3. Extract anywhere  
+4. Run `higgs.exe`  
+5. If Windows shows a warning:
+   - Click More info  
+   - Click Run anyway  
 
-**Platform:** Windows only for now.
+Platform: Windows only for now.
 
 ---
 
 ## UI Framework (Current Focus)
 
-The majority of active development is directed at the UI framework, which acts similarly to a small HTML/CSS layout and rendering engine.
+Most active development is directed at the UI framework, which behaves similarly to a small HTML/CSS layout and rendering engine.
 
 ## Implemented
 
-### **Tree-Based UI Architecture**
+### Rendering
 
-- DOM-like tree of nodes
-- Parent → child hierarchy
-- Cascading/inherited style properties
+- Vulkan renderer  
+- Lightweight abstraction classes for required rendering objects: GraphicsPipeline, RenderPass, Framebuffers, DescriptorSets, BufferObjects, etc.  
+- Directional lighting  
+- Scene Manager  
+- Multiple CPU and GPU resource managers, centralized per domain (engine, UI, game)  
+- Glyphs and frames/rects are rendered separately but via a single batched instanced draw call using an instancing data structure that supports offset lookup across bindings from one or multiple SSBOs  
 
-### **CSS-Inspired Style System**
+### Custom Work
 
-- Centralized style objects manager with support for Id, Class, Tag, and Inline based identifiers plus cascading
-- ~8% of CSS properties implemented (foundational subset)
-- Partial inheritance rules
-- Pseudo-style support (hover, focus, active)
+- Custom math library including:
+  - Templated linear algebra types (Vec, Mat, Quat)  
+  - Ear-clipping triangulation  
+  - Hole removal from simple polygons  
+  - Geometric tests (point-in-shape for Bezier curves, polygons, triangles, circumcircles, relative orientation, winding order, etc)  
+  - Delaunay-optimized N-point triangulation creation  
+  - StarEdges creation and optimization from a random initial triangulation  
+  - Bezier curve resolution (uniform and adaptive error-bounded)  
+  - Bezier path ribbon generation with per-curve join logic  
+  - Affine transformation helpers (translation, rotation, scaling)  
+  - Floating-point comparator utilities  
+- Custom file parsers for OBJ, GLB, PNG, TGA, BMP, and TTF  
 
-### **Layout System (3-Pass Pipeline)**
+### Tree-Based UI Architecture
 
-Layout currently operates in **three passes**:
+- DOM-like node tree  
+- Parent to child hierarchy  
+- Cascading and inherited style properties  
 
-1. **Intrinsic Sizing Measure**: bottom-to-top compute the intrinsic sizing for each node with undefined dimensions.
-2. **Resolve And Clamp Dimensions**: top-to-bottom resolve node dimensions and apply constraints
-3. **Position**: calculate coordinates
+### CSS-Inspired Style System
 
-### **Displays**
+- Centralized style object manager supporting ID, Class, Tag, and Inline selectors with cascading  
+- Core layout and styling implemented: display, positioning, box model (padding, margin, borders), basic text styling, overflow logic, etc
+- Partial inheritance rules  
+- Pseudo-style support (hover, focus, active)  
 
-**Stack**
+### Layout System (6-Pass Pipeline)
 
-- 'Alternative' to CSS's `block` display. Child nodes do not control their own positioning; layout is determined by the parent.
+Originally a 3-pass system, layout pipeline was split between width and height (6 passes) since text intrinsic height depends on resolved width.
 
-**Grid**
+1. Intrinsic Sizing Measure: bottom-to-top computation of intrinsic sizes for nodes with undefined dimensions  
+2. Resolve and Clamp Dimensions: top-to-bottom resolution and constraint application  
+3. Position: top-to-bottom, final coordinate calculation  
 
-- **Alignment**: `justify-content`, `align-content`, `justify-items`, `align-items`, `justify-self`, `align-self`
-- **Auto-Flow / Auto-Density**: support for column/row major and sporadic/dense placement
-- **Track sizing**: fixed (`px`), fractional (`fr`), and intrinsic (`fit-content`) tracks
-- **Gaps**: configurable row and column gaps
-- **Span and placement**: multi-column/multi-row spanning and manual placement
-- **Overlapping**: items can overlap tracks if explicitly positioned
+### Displays
 
-### **Borders**
+- Stack
+   - Alternative to CSS block display. Children do not control their own positioning. Layout is parent-driven.
 
-- Smooth border creation with cubic bezier curves
-- Dynamic border widths with interpolation
-- Dynamic corner roundness
-- Dynamic side coloring
+- Grid
+   - Alignment: `justify-content`, `align-content`, `justify-items`, `align-items`,    `justify-self`, `align-self`  
+   - Auto-flow and auto-density with row or column major placement, sparse or dense packing  
+   - Track sizing with fixed (`px`), fractional (`fr`), and intrinsic (`fit-content`) tracks  
+   - Configurable row and column gaps  
+   - Multi-row and multi-column spanning with optional manual placement  
+   - Explicit overlap support when positioned  
 
-### **Overflow + Clipping**
+### Borders
 
-- GPU stencil-test pipeline for perfect clipping
-- Correct overflow masking behavior
-- Currently overflow-y scroll logic
+Originally implemented through a geometry generation pipeline using multiple computational geometry algorithms. This was migrated to a shader-based approach to enable instance batching, significantly improving performance, and reduce memory usage.
 
-### **Scroll System**
+### Overflow and Clipping
 
-- Wheel input handling
-- Scroll bounds and clamping
-- Vertical scroll only (`overflow-y: scroll`)
-- **No animation / momentum yet**
-- **No horizontal scrolling yet**
+Originally used a stencil-buffer pipeline with cascading buffer values written onto a mask geo that then clears on the way back. This was replaced with shader-based local clipping (border to interior, not analytically perfect but visually pixel-accurate) and (not yet implemented) global clipping stage.
+
+### Scroll System
+
+- Wheel input handling  
+- Scroll bounds and clamping  
+- Vertical scrolling only (`overflow-y: scroll`)  
+- No animation or momentum yet  
+- No horizontal scrolling yet  
+
+### Text Rendering and Layout
+
+- LRU-cached glyph SDF atlas  
+- Glyph rendering via sampled SDF sprites  
+- TTF font loading  
+- Font manager  
+- Basic text layout and alignment  
+- Font size, color, and family support  
 
 ---
 
 ## Upcoming UI Work
 
-### **Scrolling**
+- Scrolling
+   - Horizontal scrolling  
+   - Smooth interpolation and momentum  
 
-- Horizontal scroll
-- Smooth interpolation/momentum
+- HTML and CSS Codegen
 
-### **Text Rendering And a Text Layout System**
+   - Custom tokenizer and parser  
+   - Mapping parsed structures into UI nodes  
 
-- Glyph rendering
-- Font loading
-- Unicode shaping
-- Text layout + inline formatting
+- CPPX Codegen
+   - Compile-time and potentially runtime JSX-like components named `cppx`  
 
-### **Virtualized DOM-Like Optimization**
-
-- Render-only visible children
-- Cull large UI trees
-- Virtualized list/scroll performance
-
-### **HTML & CSS Codegen**
-
-- Custom tokenizer and parser
-- Map parsed structure into the engine’s UI nodes
-- CSS cascading and specificity rules (subset)
-
-### **CPPX Codegen**
-
-- Compile-time JSX-like components called `cppx`
-
-### **Reactive System**
-
-- A signal based reactive system
-
----
-
-## 3D Engine (Paused)
-
-The underlying 3D renderer remains functional but is **not** the current development target.
-
-Included:
-
-- Vulkan rendering pipeline
-- Depth testing & MSAA
-- Directional lighting
-- Scene graph
-- Custom math library (Vec/Mat/Quat)
-- Custom OBJ + GLB loader
-- PNG/TGA/BGA image loading
-- Camera + input system
-- Resource and material managers
+- Reactive System
+   - Signal-based reactivity model  
 
 ---
 
 ## Future Engine Work (Long-Term)
 
-- Full PBR materials (parsing only implemented)
-- Shadow mapping
-- Ray-tracing experiments
-- Scene & transform editor
-- Physics system
-- Engine→"game executable" optimized build pipeline
-- UI + 3D integrated editor interface
+- PBR  
+- Global illumination  
+- Shadow mapping  
+- Ray tracing  
+- Scene and transform editor  
+- Physics system  
+- Engine to game-executable optimized build pipeline  
+- Integrated UI and 3D editor interface  
 
 ---
 
 ## Project Status
 
-This project's source is **private**, experimental, and actively evolving.  
-It serves primarily as an R&D platform for custom UI engines, rendering pipelines, and engine architecture exploration.
+This project's source is private, experimental, and actively evolving.  
+It primarily serves as an R&D platform for custom UI systems, rendering pipelines, and engine architecture exploration.
