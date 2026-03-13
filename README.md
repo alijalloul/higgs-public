@@ -1,17 +1,13 @@
-# Higgs Engine
+# Higgs
 
-Higgs is a lightweight C++ graphics, UI, and game engine built solely with Vulkan, GLFW, nlohmann/json, and the STL.  
+Higgs is a lightweight C++ graphics, UI, and game engine built solely with Vulkan, GLSL, GLFW, nlohmann/json, and the STL (also with the help of RenderDoc).  
 Current development is focused on the custom UI framework, which aims to provide React-like ergonomics with native performance.
 
 ---
 
 ![Higgs demo](assets/higgs.gif)
 
-NOTE - this video demonstrates the Grid display in depth: auto flows, fractional, fit, and defined tracks, cell-based percentage sizing, multi-grid item spanning, manual positioning, grid layout stacking (`justify-content: space-between`, `align-content: end`, `justify-items: end`, `justify-self: center`), nested grids, overflow handling, `Hello World!` text aligned middle, and Suzanne spinning.
-
-On startup, an SDF glyph atlas texture `test.bmp` (for testing) is generated in `assets/textures/`, containing pre-rasterized SDFs for `[a-zA-Z]` and `!`. These are manually pre-queued (except for `!`) and instance-backed at runtime. The text rendering system automatically queues and flushes only what is required.
-
-The framebuffer update propagation and callback system is not fully implemented yet. Image extents update correctly and the application should remain stable, but the UI may be incorrectly proportioned with some aspect ratio inconsistencies.
+NOTE - this video demonstrates the various specs of the `Grid` display, WBOIT, OI perfect composite clipping, z-testing, and scrolling.
 
 ---
 
@@ -23,7 +19,7 @@ The framebuffer update propagation and callback system is not fully implemented 
 4. Run `higgs.exe`  
 5. If Windows shows a warning:
    - Click More info  
-   - Click Run anyway  
+   - Click Run anyway
 
 Platform: Windows only for now.
 
@@ -31,111 +27,154 @@ Platform: Windows only for now.
 
 ## UI Framework (Current Focus)
 
-Most active development is directed at the UI framework, which behaves similarly to a small HTML/CSS layout and rendering engine.
+Most active development is directed at the GPU-accelerated UI framework.
 
-## Implemented
+### The UI Rendering Pipeline
 
-### Rendering
+The UI rendering pipeline consists of 4 subpasses and 7 instanced draw commands (the first three each have one draw command for rects and a separate one for glyphs).
 
-- Vulkan renderer  
-- Lightweight abstraction classes for required rendering objects: GraphicsPipeline, RenderPass, Framebuffers, DescriptorSets, BufferObjects, etc.  
-- Directional lighting  
-- Scene Manager  
-- Multiple CPU and GPU resource managers, centralized per domain (engine, UI, game)  
-- Glyphs and frames/rects are rendered separately but via a single batched instanced draw call using an instancing data structure that supports offset lookup across bindings from one or multiple SSBOs  
+- Clip Mask Subpass: Draws into a window-extent texture the bit mask of each node, pre-baked depending on cascading and passed via an SSBO. The masks are logically blended via `OP_OR` to create an encoding of where children of a node are allowed to be rendered.
+- Opaque Subpass: Depth test + write. Draws rects and glyphs directly to the swapchain where `alpha == 1`, meaning no transparency.
+- Alpha/Transparency Subpass: Depth tests to skip opaque fragments processing and only process alpha fragments. Draws onto two separate attachments: the accumulation attachment and the revealage attachment.
+- Resolve Subpass: Combines the accumulation and reveal attachments and draws to the swapchain image with alpha blending.
+
+The drawing logic is purely shader-based, allowing for instancing. Various properties concerning each rect are passed via an SSBO to the shader, including border corner radii, side widths, background and border colors, resolved z values, and clipping references.
+
+The main logic behind rendering a rect instance is categorizing whether a fragment lies outside the border or outside the content. More precisely, the border is composed of two paths:
+
+- The outer border consists of connected perfect quarter circles and uses a simple performant analytically perfect signed distance calculation.
+- The inner border is a quarter ellipse and uses a good approximation method.
+
+Finally, everything between the inner and outer borders is painted with the border color, and everything inside (not outside) the inner border is painted with the background color.
+
+---
+
+### Resources
+
+The engine module owns a centralized resource manager class that manages all GPU resources and is responsible for allocation, deletion, and fetching of GPU-abstracted classes. This guarantees modularity, controls lifecycle (avoids dangling pointers and works with handles), and potentially allows for concurrent loading.
+
+The UI rendering pipeline utilizes:
+
+- An SDF atlas class that holds a `Unicode` to `SDF sprite bbox` mapping for glyph rendering  
+- A render pass  
+- Multiple shader modules  
+- Multiple descriptor set layouts, pipeline layouts, and descriptor sets  
+- A graphics pipeline for each subpass  
+- Various order-agnostic SSBOs holding instance data structs for rects and glyphs  
+- Framebuffers  
+- Image attachments (clip mask, accumulation, reveal)
+
+---
 
 ### Custom Work
 
-- Custom math library including:
-  - Templated linear algebra types (Vec, Mat, Quat)  
-  - Ear-clipping triangulation  
-  - Hole removal from simple polygons  
-  - Geometric tests (point-in-shape for Bezier curves, polygons, triangles, circumcircles, relative orientation, winding order, etc)  
-  - Delaunay-optimized N-point triangulation creation  
-  - StarEdges creation and optimization from a random initial triangulation  
-  - Bezier curve resolution (uniform and adaptive error-bounded)  
-  - Bezier path ribbon generation with per-curve join logic  
-  - Affine transformation helpers (translation, rotation, scaling)  
-  - Floating-point comparator utilities  
-- Custom file parsers for OBJ, GLB, PNG, TGA, BMP, and TTF  
+As mentioned, Higgs utilizes minimal dependencies. As such, a lot of foundational logic is custom. This is mainly for ownership and learning, providing an end-to-end understanding of the system.
+
+This includes:
+
+#### Custom math library
+
+- Templated linear algebra types (`Vec`, `Mat`, `Quat`)  
+- Ear-clipping triangulation  
+- Hole removal from simple polygons  
+- Geometric tests (point-in-shape for Bézier curves, polygons, triangles, circumcircles, relative orientation, winding order, etc.)  
+- Delaunay-optimized N-point triangulation creation  
+- StarEdges creation and optimization from a random initial triangulation  
+- Bézier curve resolution (uniform and adaptive error-bounded)  
+- Bézier path ribbon generation with per-curve join logic  
+- Affine transformation helpers (translation, rotation, scaling)  
+- Floating-point comparator utilities  
+
+#### Custom file parsers
+
+- OBJ  
+- GLB  
+- PNG  
+- TGA  
+- BMP  
+- TTF  
+
+#### Custom text rendering
+
+- LRU-cached glyph SDF atlas  
+- Glyph rendering via sampled SDF sprites  
+
+#### A very early signal-based reactive system.
+
+- Currently used to mark the swapchain extent as a `Signal` object, bound to two callbacks that recreate the appropriate resources on resize.
+- `Signal` class: defines a signal object with callback ownership supporting both immediate and deferred execution. Signals should be initialized within an `Observable` to define their lifetime.
+- `Derived` class: represents a value derived from multiple signals. It should also be initialized within an `Observable` to ensure proper lifetime management.
+- `Observable` class: binds reactive objects to a scope, allowing safe destruction of signals, derived values, and their associated callbacks.
+
+
+And minor engine systems such as the base vulkan renderer, resource manager, etc.
+
+---
 
 ### Tree-Based UI Architecture
 
 - DOM-like node tree  
-- Parent to child hierarchy  
+- Parent-to-child hierarchy  
 - Cascading and inherited style properties  
+
+---
 
 ### CSS-Inspired Style System
 
 - Centralized style object manager supporting ID, Class, Tag, and Inline selectors with cascading  
-- Core layout and styling implemented: display, positioning, box model (padding, margin, borders), basic text styling, overflow logic, etc
+- Core layout and styling implemented: display, positioning, box model (padding, margin, borders), basic text styling, overflow logic, etc.  
 - Partial inheritance rules  
-- Pseudo-style support (hover, focus, active)  
+- Pseudo-style support (`hover`, `focus`, `active`)  
 
-### Layout System (6-Pass Pipeline)
+---
 
-Originally a 3-pass system, layout pipeline was split between width and height (6 passes) since text intrinsic height depends on resolved width.
+### Layout Calculation Pipeline
 
-1. Intrinsic Sizing Measure: bottom-to-top computation of intrinsic sizes for nodes with undefined dimensions  
-2. Resolve and Clamp Dimensions: top-to-bottom resolution and constraint application  
-3. Position: top-to-bottom, final coordinate calculation  
+Originally a 3-pass pipeline, it was split between width and height (6 passes) since text intrinsic height depends on the resolved width.
+
+1. Intrinsic Sizing Measure: Bottom-to-top computation of intrinsic sizes for nodes with undefined dimensions  
+2. Resolve and Clamp Dimensions: Top-to-bottom resolution and constraint application  
+3. Position: Top-to-bottom final coordinate calculation  
+
+---
 
 ### Displays
 
-- Stack
-   - Alternative to CSS block display. Children do not control their own positioning. Layout is parent-driven.
+#### Stack
 
-- Grid
-   - Alignment: `justify-content`, `align-content`, `justify-items`, `align-items`,    `justify-self`, `align-self`  
-   - Auto-flow and auto-density with row or column major placement, sparse or dense packing  
-   - Track sizing with fixed (`px`), fractional (`fr`), and intrinsic (`fit-content`) tracks  
-   - Configurable row and column gaps  
-   - Multi-row and multi-column spanning with optional manual placement  
-   - Explicit overlap support when positioned  
+- Alternative to CSS block display  
+- Children do not control their own positioning  
+- Layout is parent-driven  
 
-### Borders
+#### Grid
 
-Originally implemented through a geometry generation pipeline using multiple computational geometry algorithms. This was migrated to a shader-based approach to enable instance batching, significantly improving performance, and reduce memory usage.
+- Alignment: `justify-content`, `align-content`, `justify-items`, `align-items`, `justify-self`, `align-self`  
+- Auto-flow and auto-density with row- or column-major placement, sparse or dense packing  
+- Track sizing with fixed (`px`), fractional (`fr`), and intrinsic (`fit-content`) tracks  
+- Configurable row and column gaps  
+- Multi-row and multi-column spanning with optional manual placement  
+- Explicit overlap support when positioned  
 
-### Overflow and Clipping
-
-Originally used a stencil-buffer pipeline with cascading buffer values written onto a mask geo that then clears on the way back. This was replaced with shader-based local clipping (border to interior, not analytically perfect but visually pixel-accurate) and (not yet implemented) global clipping stage.
+---
 
 ### Scroll System
 
 - Wheel input handling  
 - Scroll bounds and clamping  
 - Vertical scrolling only (`overflow-y: scroll`)  
-- No animation or momentum yet  
-- No horizontal scrolling yet  
-
-### Text Rendering and Layout
-
-- LRU-cached glyph SDF atlas  
-- Glyph rendering via sampled SDF sprites  
-- TTF font loading  
-- Font manager  
-- Basic text layout and alignment  
-- Font size, color, and family support  
 
 ---
 
-## Upcoming UI Work
+## Major Milestones Planned
 
-- Scrolling
-   - Horizontal scrolling  
-   - Smooth interpolation and momentum  
+#### HTML and CSS Codegen
 
-- HTML and CSS Codegen
+- Custom tokenizer and parser  
+- Mapping parsed structures into UI nodes  
 
-   - Custom tokenizer and parser  
-   - Mapping parsed structures into UI nodes  
+#### CPPX Codegen
 
-- CPPX Codegen
-   - Compile-time and potentially runtime JSX-like components named `cppx`  
-
-- Reactive System
-   - Signal-based reactivity model  
+- Compile-time and potentially runtime JSX-like components named `cppx`  
 
 ---
 
@@ -147,7 +186,7 @@ Originally used a stencil-buffer pipeline with cascading buffer values written o
 - Ray tracing  
 - Scene and transform editor  
 - Physics system  
-- Engine to game-executable optimized build pipeline  
+- Engine-to-game executable optimized build pipeline  
 - Integrated UI and 3D editor interface  
 
 ---
