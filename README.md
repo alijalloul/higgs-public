@@ -193,5 +193,4 @@ Originally a 3-pass pipeline, it was split between width and height (6 passes) s
 
 ## Project Status
 
-This project's source is private, experimental, and actively evolving.  
-It primarily serves as an R&D platform for custom UI systems, rendering pipelines, and engine architecture exploration.
+This project's source is private, experimental, and actively evolving.
