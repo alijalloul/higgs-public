@@ -38,9 +38,9 @@ The UI rendering pipeline consists of 4 subpasses and 7 instanced draw commands 
 - Alpha/Transparency Subpass: Depth tests to skip opaque fragments processing and only process alpha fragments. Draws onto two separate attachments: the accumulation attachment and the revealage attachment.
 - Resolve Subpass: Combines the accumulation and reveal attachments and draws to the swapchain image with alpha blending.
 
-The drawing logic is purely shader-based, allowing for instancing. Various properties concerning each rect are passed via an SSBO to the shader, including border corner radii, side widths, background and border colors, resolved z values, and clipping references.
+The drawing logic is purely shader-based, allowing for instancing. Various properties concerning each rect are passed via an SSBO to the shader, including border corner radii, border side widths, border side colors, background color, resolved z values, and clipping references.
 
-The main logic behind rendering a rect instance is categorizing whether a fragment lies outside the border or outside the content. More precisely, the border is composed of two paths:
+The main logic behind rendering a rect instance is categorizing whether a fragment lies outside the border or outside the content w.r.t. properties to the corresponding corner/side this fragment belongs to. More precisely, the border is composed of two paths:
 
 - The outer border consists of connected perfect quarter circles and uses a simple performant analytically perfect signed distance calculation.
 - The inner border is a quarter ellipse and uses a good approximation method.
