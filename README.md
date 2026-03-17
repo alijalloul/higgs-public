@@ -7,7 +7,7 @@ Current development is focused on the custom UI framework, which aims to provide
 
 ![Higgs demo](assets/higgs.gif)
 
-NOTE - this video demonstrates the various specs of the `Grid` display, WBOIT, OI perfect composite clipping, z-testing, and scrolling.
+NOTE - this video demonstrates the various specs of the `Grid` display, WBOIT, OI perfect composite clipping, OI layering, and scrolling.
 
 ---
 
